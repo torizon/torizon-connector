@@ -2,7 +2,7 @@
 set -e
 
 echo "======================================================"
-echo " Torizon Plugin Installer for apt-based distributions "
+echo " Torizon Connector for apt-based distributions "
 echo "======================================================"
 echo '                                                    '
 echo '                      ******,                       '      

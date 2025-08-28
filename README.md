@@ -18,13 +18,13 @@ To install, [create a Torizon Cloud account](https://app.torizon.io/run) and
 run it as root (or with sudo):
 
 ```
-sh -c "$(curl -sSL https://raw.githubusercontent.com/torizon/torizon-plugin-installer/main/install-torizon-plugin.sh)"
+sh -c "$(curl -sSL https://raw.githubusercontent.com/torizon/torizon-connector/main/install-torizon-connector.sh)"
 ```
 
 Or
 
 ```
-sudo sh -c "$(curl -sSL https://raw.githubusercontent.com/torizon/torizon-plugin-installer/main/install-torizon-plugin.sh)"
+sudo sh -c "$(curl -sSL https://raw.githubusercontent.com/torizon/torizon-connector/main/install-torizon-connector.sh)"
 ```
 
 The script will create a log file in `/tmp/install-torizon-plugin.log`.
