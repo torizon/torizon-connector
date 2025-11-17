@@ -78,7 +78,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 install_torizon_repo () {
-    SUITE=$1
+    CODENAME=$1
     COMPONENT=$2
 
     echo "Installation has started, it may take a few minutes."
@@ -89,12 +89,12 @@ mkdir -p /usr/share/keyrings/
     echo "Installing curl and gpg" > /tmp/install-torizon-plugin.log
     apt-get -y update -qq >> /tmp/install-torizon-plugin.log 2>&1 && apt-get install -y -qq curl gpg >>/tmp/install-torizon-plugin.log 2>&1
 
-    curl -fsSL https://feeds.toradex.com/staging/"${OS}"/toradex-debian-repo-19092023.asc | gpg --dearmor > /usr/share/keyrings/toradex.gpg
+    curl -fsSL https://feeds.toradex.com/stable/connector/toradex-debian-repo-07102024.asc | gpg --dearmor > /usr/share/keyrings/toradex.gpg
     curl -fsSL https://packages.fluentbit.io/fluentbit.key | gpg --dearmor > /usr/share/keyrings/fluentbit-keyring.gpg
     curl -fsSL "https://download.docker.com/linux/${OS}/gpg" | gpg --dearmor > /usr/share/keyrings/docker.gpg
 
     cat > /etc/apt/sources.list.d/toradex.list <<EOF
-deb [signed-by=/usr/share/keyrings/toradex.gpg] https://feeds.toradex.com/staging/${OS}/ ${SUITE} ${COMPONENT}
+deb [signed-by=/usr/share/keyrings/toradex.gpg] https://feeds.toradex.com/stable/connector/${OS}/${CODENAME} stable ${COMPONENT}
 deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/${OS}/${CODENAME} ${CODENAME} main
 deb [signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${OS} ${CODENAME} stable
 EOF
@@ -265,7 +265,7 @@ check_if_already_provisioned
 
 echo "This script will:
   - Add Toradex's, Fluent Bit's and Docker's package feed to your system;
-  - Install fluent-bit, docker, aktualizr and rac (remote access client) applications;
+ applications;
   - Create a docker-compose binary at /usr/bin;
   - Install a docker-compose systemd service;
   - Create torizon user and add it to sudo and docker groups;
@@ -276,11 +276,11 @@ check_if_install
 
 case ${ARCH} in
     amd64|arm64)
-        PKGS_TO_INSTALL="aktualizr-torizon containerd.io docker-ce docker-ce-cli docker-compose-plugin fluent-bit rac sudo"
+        PKGS_TO_INSTALL="aktualizr-torizon containerd.io docker-ce docker-ce-cli docker-compose-plugin fluent-bit sudo"
         ;;
 
     armhf)
-        PKGS_TO_INSTALL="aktualizr-torizon containerd.io docker-ce docker-ce-cli docker-compose-plugin rac sudo"
+        PKGS_TO_INSTALL="aktualizr-torizon containerd.io docker-ce docker-ce-cli docker-compose-plugin sudo"
         ;;
 
     *)
@@ -298,11 +298,7 @@ case ${OS} in
                 ;;
 
             bookworm)
-                install_torizon_repo stable main
-                ;;
-
-            bullseye)
-                install_torizon_repo oldstable main
+                install_torizon_repo "${CODENAME}" main
                 ;;
 
             *)
