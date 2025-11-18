@@ -272,7 +272,10 @@ echo "This script will:
   - Attempt to provision the device on Torizon Cloud using a pair code;
   - Create a log file in /tmp/install-torizon-plugin.log."
 
-check_if_install
+# Skip interactive prompt
+if [ -z "${DO_NOT_PROVISION:-}" ]; then
+    check_if_install
+fi
 
 case ${ARCH} in
     amd64|arm64)
@@ -317,12 +320,12 @@ esac
 
 echo "Installation of dependencies completed!"
 
-# Early exit for CI
-if [ -n "$DO_NOT_PROVISION" ]; then
-    # set -e is set, will exit on error
+# Early exit for CI after dependency check
+if [ -n "${DO_NOT_PROVISION:-}" ]; then
     aktualizr-torizon --version
     exit 0
 fi
+
 echo "Retrieving one-time pairing token"
 echo "Ready to pair..."
 
