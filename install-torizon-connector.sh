@@ -296,11 +296,11 @@ case ${OS} in
     ubuntu|debian)
 
         case ${CODENAME} in
-            noble|jammy|focal)
+            noble|jammy)
                 install_torizon_repo "${CODENAME}" main
                 ;;
 
-            bookworm)
+            bookworm|trixie)
                 install_torizon_repo "${CODENAME}" main
                 ;;
 
