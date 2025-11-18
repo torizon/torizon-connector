@@ -3,6 +3,20 @@ set -e
 
 [ -n "${DO_NOT_PROVISION:-}" ] && set -x
 
+LOGFILE=/tmp/install-torizon-plugin.log
+
+trap '
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "ERROR: script failed with exit code $rc"
+    if [ -f "'"$LOGFILE"'" ]; then
+      cat "'"$LOGFILE"'"
+    else
+      echo "No log file found at '"$LOGFILE"'"
+    fi
+  fi
+' EXIT
+
 echo "======================================================"
 echo " Torizon Connector for apt-based distributions "
 echo "======================================================"
@@ -88,8 +102,8 @@ install_torizon_repo () {
 export DEBIAN_FRONTEND=noninteractive
 mkdir -p /usr/share/keyrings/
 
-    echo "Installing curl and gpg" > /tmp/install-torizon-plugin.log
-    apt-get -y update -qq >> /tmp/install-torizon-plugin.log 2>&1 && apt-get install -y -qq curl gpg >>/tmp/install-torizon-plugin.log 2>&1
+    echo "Installing curl and gpg" > "$LOGFILE"
+    apt-get -y update -qq >> "$LOGFILE" 2>&1 && apt-get install -y -qq curl gpg >>"$LOGFILE" 2>&1
 
     curl -fsSL https://feeds.toradex.com/stable/connector/toradex-debian-repo-07102024.asc | gpg --dearmor > /usr/share/keyrings/toradex.gpg
     curl -fsSL https://packages.fluentbit.io/fluentbit.key | gpg --dearmor > /usr/share/keyrings/fluentbit-keyring.gpg
@@ -100,12 +114,12 @@ deb [signed-by=/usr/share/keyrings/toradex.gpg] https://feeds.toradex.com/stable
 deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/${OS}/${CODENAME} ${CODENAME} main
 deb [signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${OS} ${CODENAME} stable
 EOF
-    echo "Adding the following package feeds:" >> /tmp/install-torizon-plugin.log
-    cat /etc/apt/sources.list.d/toradex.list >> /tmp/install-torizon-plugin.log
+    echo "Adding the following package feeds:" >> "$LOGFILE"
+    cat /etc/apt/sources.list.d/toradex.list >> "$LOGFILE"
 
-    echo "Installing dependencies (${PKGS_TO_INSTALL})" >> /tmp/install-torizon-plugin.log
-    apt-get -y update -qq >> /tmp/install-torizon-plugin.log 2>&1
-    apt-get -y install -qq ${PKGS_TO_INSTALL} >> /tmp/install-torizon-plugin.log 2>&1
+    echo "Installing dependencies (${PKGS_TO_INSTALL})" >> "$LOGFILE"
+    apt-get -y update -qq >> "$LOGFILE" 2>&1
+    apt-get -y install -qq ${PKGS_TO_INSTALL} >> "$LOGFILE" 2>&1
 
     if [ ! -f /usr/bin/docker-compose ]; then
       cat > /usr/bin/docker-compose <<EOF
@@ -115,8 +129,8 @@ EOF
 docker compose \$@
 EOF
     chmod a+x /usr/bin/docker-compose
-    echo "Adding /usr/bin/docker-compose:" >> /tmp/install-torizon-plugin.log
-    cat /usr/bin/docker-compose >> /tmp/install-torizon-plugin.log
+    echo "Adding /usr/bin/docker-compose:" >> "$LOGFILE"
+    cat /usr/bin/docker-compose >> "$LOGFILE"
     fi
 
     if [ ! -f /etc/systemd/system/docker-compose.service ]; then
@@ -141,9 +155,9 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
-    systemctl enable docker-compose >> /tmp/install-torizon-plugin.log 2>&1
-    echo "Adding /etc/systemd/system/docker-compose.service:" >> /tmp/install-torizon-plugin.log
-    cat /etc/systemd/system/docker-compose.service >> /tmp/install-torizon-plugin.log
+    systemctl enable docker-compose >> "$LOGFILE" 2>&1
+    echo "Adding /etc/systemd/system/docker-compose.service:" >> "$LOGFILE"
+    cat /etc/systemd/system/docker-compose.service >> "$LOGFILE"
     fi
 
 if [ -f /etc/fluent-bit/fluent-bit.conf ]; then
@@ -241,8 +255,8 @@ rm -f /etc/fluent-bit/fluent-bit.conf
     tls.crt_file /var/sota/import/client.pem
     Retry_Limit  10
 EOF
-    echo "Adding /etc/fluent-bit/fluent-bit.conf:" >> /tmp/install-torizon-plugin.log
-    cat /etc/fluent-bit/fluent-bit.conf >> /tmp/install-torizon-plugin.log
+    echo "Adding /etc/fluent-bit/fluent-bit.conf:" >> "$LOGFILE"
+    cat /etc/fluent-bit/fluent-bit.conf >> "$LOGFILE"
 fi
 
     # gecos option has changed to comment in bookworm or newer
@@ -255,12 +269,12 @@ fi
             ;;
     esac
 
-    if [ -z "$(id -u torizon 2>> /tmp/install-torizon-plugin.log)" ]; then
+    if [ -z "$(id -u torizon 2>> "$LOGFILE")" ]; then
         echo "Now we have to create the torizon user so remote access works out of the box. Please, fill in the password for torizon user."
         adduser ${adduser_gecos_opt} '' torizon
     fi
-    adduser torizon sudo >> /tmp/install-torizon-plugin.log 2>&1
-    adduser torizon docker >> /tmp/install-torizon-plugin.log 2>&1
+    adduser torizon sudo >> "$LOGFILE" 2>&1
+    adduser torizon docker >> "$LOGFILE" 2>&1
 }
 
 check_if_already_provisioned
@@ -272,7 +286,7 @@ echo "This script will:
   - Install a docker-compose systemd service;
   - Create torizon user and add it to sudo and docker groups;
   - Attempt to provision the device on Torizon Cloud using a pair code;
-  - Create a log file in /tmp/install-torizon-plugin.log."
+  - Create a log file in "$LOGFILE"."
 
 # Skip interactive prompt
 if [ -z "${DO_NOT_PROVISION:-}" ]; then
