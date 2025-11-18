@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+[ -n "${DO_NOT_PROVISION:-}" ] && set -x
+
 echo "======================================================"
 echo " Torizon Connector for apt-based distributions "
 echo "======================================================"
