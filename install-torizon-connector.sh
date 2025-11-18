@@ -110,7 +110,7 @@ mkdir -p /usr/share/keyrings/
     curl -fsSL "https://download.docker.com/linux/${OS}/gpg" | gpg --dearmor > /usr/share/keyrings/docker.gpg
 
     cat > /etc/apt/sources.list.d/toradex.list <<EOF
-deb [signed-by=/usr/share/keyrings/toradex.gpg] https://feeds.toradex.com/stable/connector/${OS}/${CODENAME} stable ${COMPONENT}
+deb [signed-by=/usr/share/keyrings/toradex.gpg] https://feeds.toradex.com/stable/connector/${OS}/${CODENAME} ${CODENAME} ${COMPONENT}
 deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/${OS}/${CODENAME} ${CODENAME} main
 deb [signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${OS} ${CODENAME} stable
 EOF
