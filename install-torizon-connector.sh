@@ -134,7 +134,10 @@ EOF
     fi
 
     if [ ! -f /etc/systemd/system/docker-compose.service ]; then
-      cat > /etc/systemd/system/docker-compose.service <<EOF
+        if [ -n "${DO_NOT_PROVISION:-}" ]; then
+        echo "DO_NOT_PROVISION set, skipping docker-compose.service installation" >> "$LOGFILE"
+      elif [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
+        cat > /etc/systemd/system/docker-compose.service <<EOF
 [Unit]
 Description=Docker Compose service with docker compose
 Requires=docker.service
@@ -154,10 +157,13 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 EOF
-    systemctl daemon-reload
-    systemctl enable docker-compose >> "$LOGFILE" 2>&1
-    echo "Adding /etc/systemd/system/docker-compose.service:" >> "$LOGFILE"
-    cat /etc/systemd/system/docker-compose.service >> "$LOGFILE"
+        systemctl daemon-reload
+        systemctl enable docker-compose >> "$LOGFILE" 2>&1
+        echo "Adding /etc/systemd/system/docker-compose.service:" >> "$LOGFILE"
+        cat /etc/systemd/system/docker-compose.service >> "$LOGFILE"
+      else
+        echo "systemd not detected, skipping docker-compose.service installation" >> "$LOGFILE"
+      fi
     fi
 
 if [ -f /etc/fluent-bit/fluent-bit.conf ]; then
