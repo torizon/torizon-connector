@@ -322,21 +322,14 @@ DOCKER_PKGS="containerd.io docker-ce docker-ce-cli docker-compose-plugin"
 
 case ${ARCH} in
     amd64|arm64)
-        PKGS_TO_INSTALL="aktualizr-torizon fluent-bit sudo"
-        if [ "$DOCKER_ALREADY_INSTALLED" -eq 0 ]; then
-            PKGS_TO_INSTALL="$PKGS_TO_INSTALL $DOCKER_PKGS"
-        fi
-        ;;
-
-    armhf)
-        PKGS_TO_INSTALL="aktualizr-torizon sudo"
+        PKGS_TO_INSTALL="aktualizr-torizon rac fluent-bit sudo"
         if [ "$DOCKER_ALREADY_INSTALLED" -eq 0 ]; then
             PKGS_TO_INSTALL="$PKGS_TO_INSTALL $DOCKER_PKGS"
         fi
         ;;
 
     *)
-        echo "${ARCH} not supported."
+        echo "${ARCH} is currently not supported. Get in touch with us at community.toradex.com for more information."
         exit 1
         ;;
 esac
