@@ -93,27 +93,47 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
+if command -v docker >/dev/null 2>&1; then
+    DOCKER_ALREADY_INSTALLED=1
+    echo "Docker detected on system, will not add Docker APT repository or reinstall Docker packages."
+else
+    DOCKER_ALREADY_INSTALLED=0
+    echo "Docker not detected, Docker packages and repository will be installed."
+fi
+
 install_torizon_repo () {
     CODENAME=$1
     COMPONENT=$2
 
     echo "Installation has started, it may take a few minutes."
 
-export DEBIAN_FRONTEND=noninteractive
-mkdir -p /usr/share/keyrings/
+    export DEBIAN_FRONTEND=noninteractive
+    mkdir -p /usr/share/keyrings/
 
     echo "Installing curl and gpg" > "$LOGFILE"
     apt-get -y update -qq >> "$LOGFILE" 2>&1 && apt-get install -y -qq curl gpg >>"$LOGFILE" 2>&1
 
     curl -fsSL https://feeds.toradex.com/stable/connector/toradex-debian-repo-07102024.asc | gpg --dearmor > /usr/share/keyrings/toradex.gpg
     curl -fsSL https://packages.fluentbit.io/fluentbit.key | gpg --dearmor > /usr/share/keyrings/fluentbit-keyring.gpg
-    curl -fsSL "https://download.docker.com/linux/${OS}/gpg" | gpg --dearmor > /usr/share/keyrings/docker.gpg
 
+    # Only add Docker key if Docker is not already installed
+    if [ "$DOCKER_ALREADY_INSTALLED" -eq 0 ]; then
+        curl -fsSL "https://download.docker.com/linux/${OS}/gpg" | gpg --dearmor > /usr/share/keyrings/docker.gpg
+    fi
+
+    # Always add Toradex and Fluent Bit feeds
     cat > /etc/apt/sources.list.d/toradex.list <<EOF
 deb [signed-by=/usr/share/keyrings/toradex.gpg] https://feeds.toradex.com/stable/connector/${OS}/${CODENAME} ${CODENAME} ${COMPONENT}
 deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/${OS}/${CODENAME} ${CODENAME} main
+EOF
+
+    # Only add Docker repo if Docker is not already installed
+    if [ "$DOCKER_ALREADY_INSTALLED" -eq 0 ]; then
+cat >> /etc/apt/sources.list.d/toradex.list <<EOF
 deb [signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${OS} ${CODENAME} stable
 EOF
+    fi
+
     echo "Adding the following package feeds:" >> "$LOGFILE"
     cat /etc/apt/sources.list.d/toradex.list >> "$LOGFILE"
 
@@ -128,13 +148,13 @@ EOF
 
 docker compose \$@
 EOF
-    chmod a+x /usr/bin/docker-compose
-    echo "Adding /usr/bin/docker-compose:" >> "$LOGFILE"
-    cat /usr/bin/docker-compose >> "$LOGFILE"
+      chmod a+x /usr/bin/docker-compose
+      echo "Adding /usr/bin/docker-compose:" >> "$LOGFILE"
+      cat /usr/bin/docker-compose >> "$LOGFILE"
     fi
 
     if [ ! -f /etc/systemd/system/docker-compose.service ]; then
-        if [ -n "${DO_NOT_PROVISION:-}" ]; then
+      if [ -n "${DO_NOT_PROVISION:-}" ]; then
         echo "DO_NOT_PROVISION set, skipping docker-compose.service installation" >> "$LOGFILE"
       elif [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
         cat > /etc/systemd/system/docker-compose.service <<EOF
@@ -166,9 +186,9 @@ EOF
       fi
     fi
 
-if [ -f /etc/fluent-bit/fluent-bit.conf ]; then
-rm -f /etc/fluent-bit/fluent-bit.conf
-    cat > /etc/fluent-bit/fluent-bit.conf <<EOF
+    if [ -f /etc/fluent-bit/fluent-bit.conf ]; then
+        rm -f /etc/fluent-bit/fluent-bit.conf
+        cat > /etc/fluent-bit/fluent-bit.conf <<EOF
 [SERVICE]
     flush        1
     daemon       Off
@@ -261,9 +281,9 @@ rm -f /etc/fluent-bit/fluent-bit.conf
     tls.crt_file /var/sota/import/client.pem
     Retry_Limit  10
 EOF
-    echo "Adding /etc/fluent-bit/fluent-bit.conf:" >> "$LOGFILE"
-    cat /etc/fluent-bit/fluent-bit.conf >> "$LOGFILE"
-fi
+        echo "Adding /etc/fluent-bit/fluent-bit.conf:" >> "$LOGFILE"
+        cat /etc/fluent-bit/fluent-bit.conf >> "$LOGFILE"
+    fi
 
     # gecos option has changed to comment in bookworm or newer
     case $CODENAME in
@@ -286,8 +306,7 @@ fi
 check_if_already_provisioned
 
 echo "This script will:
-  - Add Toradex's, Fluent Bit's and Docker's package feed to your system;
- applications;
+  - Add Toradex's and Fluent Bit's package feeds to your system (and Docker's feed if Docker is not already installed);
   - Create a docker-compose binary at /usr/bin;
   - Install a docker-compose systemd service;
   - Create torizon user and add it to sudo and docker groups;
@@ -299,13 +318,21 @@ if [ -z "${DO_NOT_PROVISION:-}" ]; then
     check_if_install
 fi
 
+DOCKER_PKGS="containerd.io docker-ce docker-ce-cli docker-compose-plugin"
+
 case ${ARCH} in
     amd64|arm64)
-        PKGS_TO_INSTALL="aktualizr-torizon containerd.io docker-ce docker-ce-cli docker-compose-plugin fluent-bit sudo"
+        PKGS_TO_INSTALL="aktualizr-torizon fluent-bit sudo"
+        if [ "$DOCKER_ALREADY_INSTALLED" -eq 0 ]; then
+            PKGS_TO_INSTALL="$PKGS_TO_INSTALL $DOCKER_PKGS"
+        fi
         ;;
 
     armhf)
-        PKGS_TO_INSTALL="aktualizr-torizon containerd.io docker-ce docker-ce-cli docker-compose-plugin sudo"
+        PKGS_TO_INSTALL="aktualizr-torizon sudo"
+        if [ "$DOCKER_ALREADY_INSTALLED" -eq 0 ]; then
+            PKGS_TO_INSTALL="$PKGS_TO_INSTALL $DOCKER_PKGS"
+        fi
         ;;
 
     *)
