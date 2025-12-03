@@ -365,6 +365,7 @@ echo "Installation of dependencies completed!"
 # Early exit for CI after dependency check
 if [ -n "${DO_NOT_PROVISION:-}" ]; then
     aktualizr-torizon --version
+    rac --version
     exit 0
 fi
 
