@@ -110,8 +110,16 @@ install_torizon_repo () {
     export DEBIAN_FRONTEND=noninteractive
     mkdir -p /usr/share/keyrings/
 
+    if [ "$CODENAME" = "jammy" ]; then
+        cat > /etc/apt/preferences.d/ca-certificates <<EOF
+Package: ca-certificates
+Pin: release a=jammy
+Pin-Priority: 1001
+EOF
+    fi
+
     echo "Installing curl and gpg" > "$LOGFILE"
-    apt-get -y update -qq >> "$LOGFILE" 2>&1 && apt-get install -y -qq curl gpg >>"$LOGFILE" 2>&1
+    apt-get -y update -qq >> "$LOGFILE" 2>&1 && apt-get install -y -qq --allow-downgrades ca-certificates curl gpg >>"$LOGFILE" 2>&1
 
     curl -fsSL https://feeds.toradex.com/torizon/connector/toradex-debian-repo-07102024.asc | gpg --dearmor > /usr/share/keyrings/toradex.gpg
     curl -fsSL https://packages.fluentbit.io/fluentbit.key | gpg --dearmor > /usr/share/keyrings/fluentbit-keyring.gpg
